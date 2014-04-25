@@ -1,0 +1,7 @@
+#EXTM3U
+#EXT-X-STREAM-INF:PROGRAM-ID=1127167744,BANDWIDTH=1000000
+http://public.infozen.cshls.lldns.net/infozen/public/public/public_200.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1127167744,BANDWIDTH=400000
+http://public.infozen.cshls.lldns.net/infozen/public/public/public_400.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1127167744,BANDWIDTH=200000
+http://public.infozen.cshls.lldns.net/infozen/public/public/public_200.m3u8
