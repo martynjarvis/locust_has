@@ -1,5 +1,6 @@
 import random
 import urllib2
+import urlparse
 
 
 class MasterPlaylist():
@@ -77,20 +78,27 @@ class Player():
     queue = None
 
     def play(self, url, quality=None):
-        f =  urllib2.urlopen(url) 
-        self.parse(f.read())                        
+        baseUrl = url
 
-        # grab Master Manifest
-        # parse it
-        # choose random quality, unless given quality
-        # grab media playlist
+        f =  urllib2.urlopen(url)
+        self.parse(f.read())
+
+        url = urlparse.urljoin(baseUrl, random.choice(self.playlists).name)
+        f = urllib2.urlopen(url)
+        self.parse(f.read())
+
+        for a in self.queue:
+            url = urlparse.urljoin(baseUrl, a.name)
+            f = urllib2.urlopen(url)
+            self.parse(f.read())
+
         # playlistFetched = now
         # buffer = 0
         # while true
         #   if download queue is not empty download X fragments (2?, all?, as many as I can in targetduration?)
-        #       buffer += downloaded fragments duration 
+        #       buffer += downloaded fragments duration
         #   if now - playListFetched (the age of the playlist) > THRESHOLD (1-4 target durations)
-        #       rebuild download queue 
+        #       rebuild download queue
         #   fragment = pop from queue <- if empty throw buffer underrun exception
         #   sleep fragment.duration minus the time it took for this iteration
         return 0
@@ -104,7 +112,7 @@ class Player():
 
         lines = manifest.split('\n')
         for i,line in enumerate(lines):
-            if line.startswith('#'): 
+            if line.startswith('#'):
                 if 'EXT-X-STREAM-INF' in line: # media playlist special case
                     if self.playlists is None:
                         self.playlists = [] # forget old playlists
@@ -119,7 +127,7 @@ class Player():
                     key,val = line.split(':')
                     attr = myCast(val)
                     name = lines[i+1].rstrip() # next line
-                    if name not in [x.name for x in self.queue]: 
+                    if name not in [x.name for x in self.queue]:
                         self.queue.append(MediaFragment(name,attr))
 
                 elif line.startswith('#EXT-X-'):
@@ -129,16 +137,14 @@ class Player():
                         key = line
                         val = True
                     key = attrName(key)
-                    
                     val = myCast(val)
-
                     setattr(self,key,val)
 
         # playlists weren't updated so keep old playlists
         if self.playlists == None:
-            self.playlists = oldPlaylists 
+            self.playlists = oldPlaylists
 
-        return 
+        return
 
 
 

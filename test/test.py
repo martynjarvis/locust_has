@@ -3,10 +3,10 @@ import SimpleHTTPServer
 import SocketServer
 import threading
  
-
 import hlslocust.hls as hls
-# examples
-# index.m3u8  NTV-Public-IPS.m3u8  public_200.m3u8  public_400.m3u8
+
+# allow sockets to be reused when we rerun tests
+SocketServer.TCPServer.allow_reuse_address = True
 
 
 class TddMasterPlaylist(unittest.TestCase):
@@ -17,7 +17,7 @@ class TddMasterPlaylist(unittest.TestCase):
 
     def test_playlists(self):
         playlists = [x.name for x in self.hls_player.playlists]
-        self.assertEqual(playlists, 
+        self.assertEqual(playlists,
             ['public_1000.m3u8',
              'public_400.m3u8',
              'public_200.m3u8'])
@@ -85,7 +85,7 @@ class TddPlay(unittest.TestCase):
     def test_play(self):
         playtime = self.hls_player.play('http://localhost:8000/example/NTV-Public-IPS.m3u8')
         self.assertEqual(playtime,0)
-        
+       
 
 class WebServer(threading.Thread):
     def __init__(self):
@@ -100,7 +100,6 @@ class WebServer(threading.Thread):
     def stop(self):
         self.httpd.shutdown()
 
-
 if __name__ == '__main__':
     unittest.main()
-    
+   
