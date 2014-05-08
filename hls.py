@@ -1,3 +1,6 @@
+import random
+import urllib2
+
 
 class MasterPlaylist():
     pass
@@ -11,7 +14,7 @@ class MediaPlaylist():
 class MediaFragment():
     def __init__(self,name,attributes):
         self.name = name
-        self.duration = attributes # only attrib??
+        self.duration = attributes[0] # only attrib??
 
 def myBool(a):
     if a.strip().lower()=='no':
@@ -74,6 +77,9 @@ class Player():
     queue = None
 
     def play(self, url, quality=None):
+        f =  urllib2.urlopen(url) 
+        self.parse(f.read())                        
+
         # grab Master Manifest
         # parse it
         # choose random quality, unless given quality
@@ -87,7 +93,7 @@ class Player():
         #       rebuild download queue 
         #   fragment = pop from queue <- if empty throw buffer underrun exception
         #   sleep fragment.duration minus the time it took for this iteration
-        pass
+        return 0
 
 
     def parse(self,manifest):
@@ -112,10 +118,9 @@ class Player():
                         self.queue = []
                     key,val = line.split(':')
                     attr = myCast(val)
-                    duration = attr[0]
                     name = lines[i+1].rstrip() # next line
                     if name not in [x.name for x in self.queue]: 
-                        self.queue.append(MediaFragment(name,duration))
+                        self.queue.append(MediaFragment(name,attr))
 
                 elif line.startswith('#EXT-X-'):
                     try:

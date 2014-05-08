@@ -1,6 +1,10 @@
 import unittest
-import hlslocust.hls as hls
+import SimpleHTTPServer
+import SocketServer
+import threading
+ 
 
+import hlslocust.hls as hls
 # examples
 # index.m3u8  NTV-Public-IPS.m3u8  public_200.m3u8  public_400.m3u8
 
@@ -14,9 +18,9 @@ class TddMasterPlaylist(unittest.TestCase):
     def test_playlists(self):
         playlists = [x.name for x in self.hls_player.playlists]
         self.assertEqual(playlists, 
-            ['http://public.infozen.cshls.lldns.net/infozen/public/public/public_200.m3u8',
-             'http://public.infozen.cshls.lldns.net/infozen/public/public/public_400.m3u8',
-             'http://public.infozen.cshls.lldns.net/infozen/public/public/public_200.m3u8'])
+            ['public_1000.m3u8',
+             'public_400.m3u8',
+             'public_200.m3u8'])
 
     def test_playlist_bandwidths(self):
         bandwidths = [x.bandwidth for x in self.hls_player.playlists]
@@ -46,14 +50,14 @@ class TddMediaPlaylist(unittest.TestCase):
     def test_manifest_queue(self):
         filenames = [x.name for x in self.hls_player.queue]
         self.assertEqual(filenames,
-                ['../../infozen_public/streams/public/public_200Num32458.ts',
-                '../../infozen_public/streams/public/public_200Num32459.ts',
-                '../../infozen_public/streams/public/public_200Num32460.ts',
-                '../../infozen_public/streams/public/public_200Num32461.ts',
-                '../../infozen_public/streams/public/public_200Num32462.ts',
-                '../../infozen_public/streams/public/public_200Num32463.ts',
-                '../../infozen_public/streams/public/public_200Num32464.ts',
-                '../../infozen_public/streams/public/public_200Num32465.ts'])
+                ['public_200/Num32458.ts',
+                 'public_200/Num32459.ts',
+                 'public_200/Num32460.ts',
+                 'public_200/Num32461.ts',
+                 'public_200/Num32462.ts',
+                 'public_200/Num32463.ts',
+                 'public_200/Num32464.ts',
+                 'public_200/Num32465.ts'])
 
     def test_manifest_durations(self):
         durations = [x.duration for x in self.hls_player.queue]
@@ -69,6 +73,34 @@ class TddMediaPlaylist(unittest.TestCase):
             self.hls_player.parse(f.read())
         self.assertEqual(len(self.hls_player.queue),8)
 
+class TddPlay(unittest.TestCase):
+    def setUp(self):
+        self.hls_player = hls.Player()
+        self.server = WebServer()
+        self.server.start()
+
+    def tearDown(self):
+        self.server.stop()
+
+    def test_play(self):
+        playtime = self.hls_player.play('http://localhost:8000/example/NTV-Public-IPS.m3u8')
+        self.assertEqual(playtime,0)
+        
+
+class WebServer(threading.Thread):
+    def __init__(self):
+        PORT = 8000
+        Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+        self.httpd = SocketServer.TCPServer(("", PORT), Handler)
+        threading.Thread.__init__(self)
+
+    def run(self):
+        self.httpd.serve_forever()
+
+    def stop(self):
+        self.httpd.shutdown()
+
 
 if __name__ == '__main__':
     unittest.main()
+    
