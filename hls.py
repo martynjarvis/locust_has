@@ -78,6 +78,7 @@ class Player():
     queue = None
 
     def play(self, url, quality=None):
+        playtime = 0.0
         baseUrl = url
 
         f =  urllib2.urlopen(url)
@@ -90,7 +91,8 @@ class Player():
         for a in self.queue:
             url = urlparse.urljoin(baseUrl, a.name)
             f = urllib2.urlopen(url)
-            self.parse(f.read())
+            playtime += a.duration
+            #unused = f.read()
 
         # playlistFetched = now
         # buffer = 0
@@ -101,7 +103,7 @@ class Player():
         #       rebuild download queue
         #   fragment = pop from queue <- if empty throw buffer underrun exception
         #   sleep fragment.duration minus the time it took for this iteration
-        return 0
+        return playtime
 
 
     def parse(self,manifest):

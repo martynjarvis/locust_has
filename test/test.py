@@ -8,6 +8,30 @@ import hlslocust.hls as hls
 # allow sockets to be reused when we rerun tests
 SocketServer.TCPServer.allow_reuse_address = True
 
+class TddCasting(unittest.TestCase):
+    def test_castInt(self):
+        self.assertEqual(hls.myCast('1'),1)
+        self.assertEqual(hls.myCast('-1'),-1)
+
+    def test_castFloat(self):
+        self.assertEqual(hls.myCast('1.5'),1.5)
+        self.assertEqual(hls.myCast('1.0'),1.0)
+        self.assertEqual(hls.myCast('-1.0'),-1.0)
+
+    def test_castBool(self):
+        self.assertEqual(hls.myCast('NO'),False)
+        self.assertEqual(hls.myCast('No'),False)
+        self.assertEqual(hls.myCast('no'),False)
+        self.assertEqual(hls.myCast('YES'),True)
+        self.assertEqual(hls.myCast('Yes'),True)
+        self.assertEqual(hls.myCast('yes'),True)
+
+    def test_castList(self):
+        self.assertEqual(hls.myCast('No,10,100.0'),[False,10,100.0])
+
+    def test_castDict(self):
+        self.assertEqual(hls.myCast('PROGRAM-ID=1127167744,BANDWIDTH=1000000'),
+                         {'program_id':1127167744,'bandwidth':1000000})
 
 class TddMasterPlaylist(unittest.TestCase):
     def setUp(self):
@@ -84,7 +108,7 @@ class TddPlay(unittest.TestCase):
 
     def test_play(self):
         playtime = self.hls_player.play('http://localhost:8000/example/NTV-Public-IPS.m3u8')
-        self.assertEqual(playtime,0)
+        self.assertEqual(playtime,24.0)
        
 
 class WebServer(threading.Thread):
