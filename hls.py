@@ -33,15 +33,15 @@ def myDict(a):
         dct[key] = myCast(val)
     return dct
 
-def attrName(key):
-    return key.replace('#EXT-X-','').replace('-','_').lower()
-
 def myList(a):
     a = a.split(',')
     if len(a)>1:
         return [myCast(x) for x in a]
     else:
         raise ValueError
+
+def attrName(key):
+    return key.replace('#EXT-X-','').replace('-','_').lower()
 
 def myCast(val):
     # intelligent casting ish
