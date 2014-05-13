@@ -1,22 +1,17 @@
-from locust import HttpLocust, TaskSet, task
+from locust import Locust, TaskSet, task
+import hlslocust.hls as hls
 
 class UserBehavior(TaskSet):
-    def on_start(self):
-        """ on_start is called when a Locust start before any task is scheduled """
-        self.login()
+    @task()
+    def play(self):
+        self.client.play('http://localhost:8000/example/NTV-Public-IPS.m3u8')
 
-    def login(self):
-        self.client.get("/login.html")
+class HLSLocust(Locust):
+    def __init__(self, *args, **kwargs):
+        super(HLSLocust, self).__init__(*args, **kwargs)
+        self.client = hls.Player()
 
-    @task(2)
-    def index(self):
-        self.client.get("/")
-
-    @task(1)
-    def profile(self):
-        self.client.get("/profile.html")
-
-class WebsiteUser(HttpLocust):
+class WebsiteUser(HLSLocust):
     task_set = UserBehavior
     min_wait=5000
     max_wait=9000

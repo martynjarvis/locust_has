@@ -1,7 +1,131 @@
 import random
-import urllib2
+import requests
 import urlparse
+import gevent
+import time
+from locust import events
 
+class Player():
+    playlists=None
+    queue = None
+
+    def __init__(self):
+        pass
+
+    def request(self,url):
+        start_time = time.time()
+        try:
+            r = requests.get(url)
+        except requests.exceptions.ConnectionError as e:
+            total_time = int((time.time() - start_time) * 1000)
+            events.request_failure.fire(request_type="GET", name=url, 
+                                        response_time=total_time, exception=e)
+        except requests.exceptions.HTTPError as e:
+            total_time = int((time.time() - start_time) * 1000)
+            events.request_failure.fire(request_type="GET", name=url, 
+                                       response_time=total_time, exception=e)
+        except requests.exceptions.Timeout as e:
+            total_time = int((time.time() - start_time) * 1000)
+            events.request_failure.fire(request_type="GET", name=url, 
+                                        response_time=total_time, exception=e)
+        except requests.exceptions.TooManyRedirects  as e:
+            total_time = int((time.time() - start_time) * 1000)
+            events.request_failure.fire(request_type="GET", name=url, 
+                                        response_time=total_time, exception=e)
+        else:
+            total_time = int((time.time() - start_time) * 1000)
+            try:
+                response_length = int(r.headers['Content-Length'])
+            except KeyError:
+                response_length = 0
+            events.request_success.fire(request_type="GET", name=url, 
+                                        response_time=total_time, 
+                                        response_length=response_length)
+            return r
+        return None
+
+    def play(self, url=None, quality=None):
+        baseUrl = url
+        playtime = 0.0
+
+        # request master playlist
+        r = self.request(url)
+        if r:
+            self.parse(r.text)
+        else: 
+            return
+
+        # currently I randomly pick a quality, unless it's given...
+        if quality is None:
+            url = urlparse.urljoin(baseUrl, random.choice(self.playlists).name)
+        else:
+            i = quality%len(self.playlist)
+            url = urlparse.urljoin(baseUrl, self.playlists[i].name)
+
+        # request media playlist
+        r = self.request(url)
+        if r:
+            self.parse(r.text)
+        else: 
+            return
+
+        # segment loop
+        while len(self.queue) > 0:
+            start_time = time.time()
+            a = self.queue.pop(0)
+            url = urlparse.urljoin(baseUrl, a.name)
+            r = self.request(url)
+            playtime += a.duration
+            total_time = (time.time() - start_time)
+            sleep_duration = float(a.duration) - total_time
+            if sleep_duration < 0.0:
+                raise ValueError
+            gevent.sleep(sleep_duration)
+
+        return playtime
+
+
+    def parse(self,manifest):
+
+        # remember old playlists
+        oldPlaylists = self.playlists
+        self.playlists = None
+
+        lines = manifest.split('\n')
+        for i,line in enumerate(lines):
+            if line.startswith('#'):
+                if 'EXT-X-STREAM-INF' in line: # media playlist special case
+                    if self.playlists is None:
+                        self.playlists = [] # forget old playlists
+                    key,val = line.split(':')
+                    attr = myCast(val)
+                    name = lines[i+1].rstrip() # next line
+                    self.playlists.append(MediaPlaylist(name,attr))
+
+                if 'EXTINF' in line: # fragment special case
+                    if self.queue is None:
+                        self.queue = []
+                    key,val = line.split(':')
+                    attr = myCast(val)
+                    name = lines[i+1].rstrip() # next line
+                    if name not in [x.name for x in self.queue]:
+                        self.queue.append(MediaFragment(name,attr))
+
+                elif line.startswith('#EXT-X-'):
+                    try:
+                        key,val = line.split(':')
+                    except ValueError:
+                        key = line
+                        val = True
+                    key = attrName(key)
+                    val = myCast(val)
+                    setattr(self,key,val)
+
+        # playlists weren't updated so keep old playlists
+        if self.playlists == None:
+            self.playlists = oldPlaylists
+
+        return
 
 class MasterPlaylist():
     pass
@@ -71,83 +195,4 @@ def myCast(val):
         pass
 
     return val
-
-
-class Player():
-    playlists=None
-    queue = None
-
-    def play(self, url, quality=None):
-        playtime = 0.0
-        baseUrl = url
-
-        f =  urllib2.urlopen(url)
-        self.parse(f.read())
-
-        url = urlparse.urljoin(baseUrl, random.choice(self.playlists).name)
-        f = urllib2.urlopen(url)
-        self.parse(f.read())
-
-        for a in self.queue:
-            url = urlparse.urljoin(baseUrl, a.name)
-            f = urllib2.urlopen(url)
-            playtime += a.duration
-            #unused = f.read()
-
-        # playlistFetched = now
-        # buffer = 0
-        # while true
-        #   if download queue is not empty download X fragments (2?, all?, as many as I can in targetduration?)
-        #       buffer += downloaded fragments duration
-        #   if now - playListFetched (the age of the playlist) > THRESHOLD (1-4 target durations)
-        #       rebuild download queue
-        #   fragment = pop from queue <- if empty throw buffer underrun exception
-        #   sleep fragment.duration minus the time it took for this iteration
-        return playtime
-
-
-    def parse(self,manifest):
-
-        # remember old playlists
-        oldPlaylists = self.playlists
-        self.playlists = None
-
-        lines = manifest.split('\n')
-        for i,line in enumerate(lines):
-            if line.startswith('#'):
-                if 'EXT-X-STREAM-INF' in line: # media playlist special case
-                    if self.playlists is None:
-                        self.playlists = [] # forget old playlists
-                    key,val = line.split(':')
-                    attr = myCast(val)
-                    name = lines[i+1].rstrip() # next line
-                    self.playlists.append(MediaPlaylist(name,attr))
-
-                if 'EXTINF' in line: # fragment special case
-                    if self.queue is None:
-                        self.queue = []
-                    key,val = line.split(':')
-                    attr = myCast(val)
-                    name = lines[i+1].rstrip() # next line
-                    if name not in [x.name for x in self.queue]:
-                        self.queue.append(MediaFragment(name,attr))
-
-                elif line.startswith('#EXT-X-'):
-                    try:
-                        key,val = line.split(':')
-                    except ValueError:
-                        key = line
-                        val = True
-                    key = attrName(key)
-                    val = myCast(val)
-                    setattr(self,key,val)
-
-        # playlists weren't updated so keep old playlists
-        if self.playlists == None:
-            self.playlists = oldPlaylists
-
-        return
-
-
-
 

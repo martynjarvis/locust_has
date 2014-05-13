@@ -2,6 +2,7 @@ import unittest
 import SimpleHTTPServer
 import SocketServer
 import threading
+from mock import patch
  
 import hlslocust.hls as hls
 
@@ -106,8 +107,9 @@ class TddPlay(unittest.TestCase):
     def tearDown(self):
         self.server.stop()
 
-    def test_play(self):
-        playtime = self.hls_player.play('http://localhost:8000/example/NTV-Public-IPS.m3u8')
+    @patch('gevent.sleep', return_value=None)
+    def test_play(self, patched_sleep):
+        playtime = self.hls_player.play(url='http://localhost:8000/example/NTV-Public-IPS.m3u8')
         self.assertEqual(playtime,24.0)
        
 
