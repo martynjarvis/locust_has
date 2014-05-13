@@ -21,19 +21,10 @@ class Player():
         start_time = time.time()
         try:
             r = requests.get(url)
-        except requests.exceptions.ConnectionError as e:
-            total_time = int((time.time() - start_time) * 1000)
-            events.request_failure.fire(request_type="GET", name=url, 
-                                        response_time=total_time, exception=e)
-        except requests.exceptions.HTTPError as e:
-            total_time = int((time.time() - start_time) * 1000)
-            events.request_failure.fire(request_type="GET", name=url, 
-                                       response_time=total_time, exception=e)
-        except requests.exceptions.Timeout as e:
-            total_time = int((time.time() - start_time) * 1000)
-            events.request_failure.fire(request_type="GET", name=url, 
-                                        response_time=total_time, exception=e)
-        except requests.exceptions.TooManyRedirects  as e:
+        except (requests.exceptions.ConnectionError,
+                requests.exceptions.HTTPError, 
+                requests.exceptions.Timeout,
+                requests.exceptions.TooManyRedirects) as e:
             total_time = int((time.time() - start_time) * 1000)
             events.request_failure.fire(request_type="GET", name=url, 
                                         response_time=total_time, exception=e)
