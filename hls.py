@@ -13,6 +13,7 @@ class HLSLocust(Locust):
 class Player():
     playlists=None
     queue = None
+    # TODO, all attr should exist on these objects, rather than player object
 
     def __init__(self):
         pass
