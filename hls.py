@@ -3,7 +3,12 @@ import requests
 import urlparse
 import gevent
 import time
-from locust import events
+from locust import events,Locust
+
+class HLSLocust(Locust):
+    def __init__(self, *args, **kwargs):
+        super(HLSLocust, self).__init__(*args, **kwargs)
+        self.client = Player()
 
 class Player():
     playlists=None
