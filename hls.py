@@ -70,6 +70,10 @@ class Player():
             return
 
         # segment loop
+        # Currently download segment then 'play' it by sleeping for the length
+        # TODO, break out of this loop every 2x target duration to grab updated
+        # manifest file.
+        # TODO, do this like a client would do.
         while len(self.queue) > 0:
             start_time = time.time()
             a = self.queue.pop(0)
@@ -79,7 +83,9 @@ class Player():
             total_time = (time.time() - start_time)
             sleep_duration = float(a.duration) - total_time
             if sleep_duration < 0.0:
-                raise ValueError
+                raise ValueError # TODO what I'm saying here is that I took >
+                                 # segment length to download it. This isn't a
+                                 # problem in itself, I need to be smarter here
             gevent.sleep(sleep_duration)
 
         return playtime
