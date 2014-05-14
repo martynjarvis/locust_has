@@ -5,6 +5,9 @@ import gevent
 import time
 from locust import events,Locust
 
+BUFFERTIME = 10.0 # time to wait before playing
+MAXMANIFESTAGE = 20.0
+
 class HLSLocust(Locust):
     def __init__(self, *args, **kwargs):
         super(HLSLocust, self).__init__(*args, **kwargs)
@@ -43,7 +46,6 @@ class Player():
 
     def play(self, url=None, quality=None):
         baseUrl = url
-        playtime = 0.0
 
         # request master playlist
         r = self.request(url)
@@ -71,22 +73,42 @@ class Player():
         # TODO, break out of this loop every 2x target duration to grab updated
         # manifest file.
         # TODO, do this like a client would do.
-        while len(self.queue) > 0:
-            start_time = time.time()
-            a = self.queue.pop(0)
-            url = urlparse.urljoin(baseUrl, a.name)
-            r = self.request(url)
-            playtime += a.duration
-            total_time = (time.time() - start_time)
-            sleep_duration = float(a.duration) - total_time
-            if sleep_duration < 0.0:
-                raise ValueError # TODO what I'm saying here is that I took >
-                                 # segment length to download it. This isn't a
-                                 # problem in itself, I need to be smarter here
-            gevent.sleep(sleep_duration)
+        start_time = None
+        buffer_time = 0.0
+        playing = False
+        last_manifest_time = time.time()
 
-        return playtime
+        while True :
+            # should I download an object?
+            if len(self.queue) > 0 :
+                a = self.queue.pop(0)
+                url = urlparse.urljoin(baseUrl, a.name)
+                r = self.request(url)
+                buffer_time += a.duration
 
+            # should we start playing?
+            if not playing and buffer_time > BUFFERTIME:
+                playing = True
+                start_time = time.time()
+
+            if playing:
+                # should we grab a new manifest?
+                manifest_age = (time.time() - last_manifest_time)
+                #if manifest_age > MAXMANIFESTAGE: # TODO, new manifest will fill downloaded files here
+                    #r = self.request(url)
+                    #if r:
+                        #self.parse(r.text)
+
+                # am I underrunning?
+                play_time = (time.time() - start_time)
+                if play_time > buffer_time:
+                    if len(self.queue)>0:
+                        # we've run out of buffer but we still have parts to download
+                        raise ValueError # underrun
+                    # we've finished?
+                    else :
+                        return (buffer_time,play_time)
+            gevent.sleep(0) # yield execution
 
     def parse(self,manifest):
 

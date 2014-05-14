@@ -2,7 +2,7 @@ import unittest
 import SimpleHTTPServer
 import SocketServer
 import threading
-from mock import patch
+from mock import patch, Mock
  
 import hlslocust.hls as hls
 
@@ -98,6 +98,9 @@ class TddMediaPlaylist(unittest.TestCase):
             self.hls_player.parse(f.read())
         self.assertEqual(len(self.hls_player.queue),8)
 
+time_mock = Mock()
+time_mock.side_effect = [(30.0*x/10) for x in range(0,10)]
+
 class TddPlay(unittest.TestCase):
     def setUp(self):
         self.hls_player = hls.Player()
@@ -107,11 +110,12 @@ class TddPlay(unittest.TestCase):
     def tearDown(self):
         self.server.stop()
 
+    #@patch('time.time', new=time_mock)
     @patch('gevent.sleep', return_value=None)
     def test_play(self, patched_sleep):
-        playtime = self.hls_player.play(url='http://localhost:8000/example/NTV-Public-IPS.m3u8')
-        self.assertEqual(playtime,24.0)
-       
+        buffer_time, play_time = self.hls_player.play(url='http://localhost:8000/example/NTV-Public-IPS.m3u8')
+        self.assertEqual(buffer_time,24.0) # how long the plalists were
+        self.assertGreaterEqual(play_time,24.0) # how long we took playing it before we returned
 
 class WebServer(threading.Thread):
     def __init__(self):
