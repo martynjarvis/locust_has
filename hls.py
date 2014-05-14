@@ -6,7 +6,7 @@ import time
 from locust import events,Locust
 
 BUFFERTIME = 10.0 # time to wait before playing
-MAXMANIFESTAGE = 10.0
+MAXMANIFESTAGE = 20.0
 
 class HLSLocust(Locust):
     def __init__(self, *args, **kwargs):
@@ -21,8 +21,11 @@ class Player():
     def __init__(self):
         pass
 
-    def request(self,url):
+    def request(self,url,name=None):
         start_time = time.time()
+        if name is None:
+            name = url
+
         try:
             r = requests.get(url)
         except (requests.exceptions.ConnectionError,
@@ -30,7 +33,7 @@ class Player():
                 requests.exceptions.Timeout,
                 requests.exceptions.TooManyRedirects) as e:
             total_time = int((time.time() - start_time) * 1000)
-            events.request_failure.fire(request_type="GET", name=url, 
+            events.request_failure.fire(request_type="GET", name=name, 
                                         response_time=total_time, exception=e)
         else:
             total_time = int((time.time() - start_time) * 1000)
@@ -38,7 +41,8 @@ class Player():
                 response_length = int(r.headers['Content-Length'])
             except KeyError:
                 response_length = 0
-            events.request_success.fire(request_type="GET", name=url, 
+                
+            events.request_success.fire(request_type="GET", name=name, 
                                         response_time=total_time, 
                                         response_length=response_length)
             return r
@@ -68,11 +72,6 @@ class Player():
         else: 
             return
 
-        # segment loop
-        # Currently download segment then 'play' it by sleeping for the length
-        # TODO, break out of this loop every 2x target duration to grab updated
-        # manifest file.
-        # TODO, do this like a client would do.
         start_time = None
         buffer_time = 0.0
         playing = False
@@ -85,12 +84,12 @@ class Player():
             if idx < len(self.queue):
                 a = self.queue[idx]
                 url = urlparse.urljoin(baseUrl, a.name)
-                r = self.request(url)
+                r = self.request(url,'Segment ({url})'.format(url=playlist_url))
                 buffer_time += a.duration
                 idx+=1
 
             # should we start playing?
-            if not playing and buffer_time > BUFFERTIME:
+            if not playing and buffer_time > BUFFERTIME: # TODO num segments?
                 playing = True
                 start_time = time.time()
 
@@ -103,19 +102,19 @@ class Player():
                     if r:
                         self.parse(r.text)
 
-                # am I underrunning?
                 play_time = (time.time() - start_time)
+                # am I underrunning?
                 if play_time > buffer_time:
                     if idx < len(self.queue):
                         # we've run out of buffer but we still have parts to download
                         raise ValueError # underrun
-                    # we've finished?
+                    # we've finished a vod?
                     else :
                         return (buffer_time,play_time)
                 # have we seen enough?
                 if duration and play_time > duration :
                     return (buffer_time,play_time)
-            gevent.sleep(0) # yield execution
+            gevent.sleep(1) # yield execution # TODO 1 second? to avoid 100% cpu?
 
     def parse(self,manifest):
 
@@ -126,12 +125,13 @@ class Player():
         lines = manifest.split('\n')
         for i,line in enumerate(lines):
             if line.startswith('#'):
+                # TODO, fix parsing, I think EXT-X extents the previous EXT line
                 if 'EXT-X-STREAM-INF' in line: # media playlist special case
                     if self.playlists is None:
                         self.playlists = [] # forget old playlists
                     key,val = line.split(':')
                     attr = myCast(val)
-                    name = lines[i+1].rstrip() # next line
+                    name = lines[i+1].rstrip() # next line 
                     self.playlists.append(MediaPlaylist(name,attr))
 
                 if 'EXTINF' in line: # fragment special case
@@ -140,8 +140,9 @@ class Player():
                     key,val = line.split(':')
                     attr = myCast(val)
                     name = lines[i+1].rstrip() # next line
-                    if name not in [x.name for x in self.queue]:
-                        self.queue.append(MediaFragment(name,attr))
+                    if not name.startswith('#'):# TODO, bit of a hack here
+                        if name not in [x.name for x in self.queue]:
+                            self.queue.append(MediaFragment(name,attr))
 
                 elif line.startswith('#EXT-X-'):
                     try:
