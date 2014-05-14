@@ -44,7 +44,7 @@ class Player():
             return r
         return None
 
-    def play(self, url=None, quality=None):
+    def play(self, url=None, quality=None, duration=None):
         baseUrl = url
 
         # request master playlist
@@ -112,6 +112,9 @@ class Player():
                     # we've finished?
                     else :
                         return (buffer_time,play_time)
+                # have we seen enough?
+                if duration and play_time > duration :
+                    return (buffer_time,play_time)
             gevent.sleep(0) # yield execution
 
     def parse(self,manifest):
@@ -178,7 +181,7 @@ def myBool(a):
     raise ValueError
 
 def myDict(a):
-    a = a.split(',')
+    a = list(mySplit(a))
     dct = {}
     for b in a:
         key,val = b.split('=')
@@ -187,11 +190,27 @@ def myDict(a):
     return dct
 
 def myList(a):
-    a = a.split(',')
+    a = list(mySplit(a))
     if len(a)>1:
         return [myCast(x) for x in a]
     else:
         raise ValueError
+
+def mySplit(string,sep=','):
+    start = 0
+    end = 0
+    inString = False
+    while end < len(string):
+        if string[end] not in sep or inString: # mid string
+            if string[end] in '\'\"':
+                inString = not inString
+            end +=1
+        else: # separator
+            yield string[start:end]
+            end +=1
+            start = end
+    if start != end:# ignore empty items
+        yield string[start:end]
 
 def attrName(key):
     return key.replace('#EXT-X-','').replace('-','_').lower()

@@ -9,6 +9,29 @@ import hlslocust.hls as hls
 # allow sockets to be reused when we rerun tests
 SocketServer.TCPServer.allow_reuse_address = True
 
+class TddSplitting(unittest.TestCase):
+    def test_simple_split(self):
+        self.assertEqual(list(hls.mySplit('1,2,3,4')),
+                         ['1','2','3','4'])
+        self.assertEqual(list(hls.mySplit('1,"2,3",4')),
+                         ['1','"2,3"','4'])
+        self.assertEqual(list(hls.mySplit("1,'2,3',4")),
+                         ['1',"'2,3'",'4'])
+        self.assertEqual(list(hls.mySplit("1,'2,3',4")),
+                         ['1',"'2,3'",'4'])
+
+    def test_complex_split(self):
+        long_str = 'PROGRAM-ID=1,BANDWIDTH=602230,CODECS="avc1.66.31, mp4a.40.2",RESOLUTION=320x240'
+        exp_res = ['PROGRAM-ID=1','BANDWIDTH=602230',
+                   'CODECS="avc1.66.31, mp4a.40.2"','RESOLUTION=320x240']
+        self.assertEqual(list(hls.mySplit(long_str)),exp_res)
+
+    def test_trailing_comma(self):
+        self.assertEqual(list(hls.mySplit('1,2,3,')), ['1','2','3'])
+                
+    def test_single_item(self):
+        self.assertEqual(list(hls.mySplit('test')), ['test'])
+
 class TddCasting(unittest.TestCase):
     def test_castInt(self):
         self.assertEqual(hls.myCast('1'),1)
@@ -113,9 +136,10 @@ class TddPlay(unittest.TestCase):
     #@patch('time.time', new=time_mock)
     @patch('gevent.sleep', return_value=None)
     def test_play(self, patched_sleep):
-        buffer_time, play_time = self.hls_player.play(url='http://localhost:8000/example/NTV-Public-IPS.m3u8')
+        buffer_time, play_time = self.hls_player.play(url='http://localhost:8000/example/NTV-Public-IPS.m3u8',duration=2)
         self.assertEqual(buffer_time,24.0) # how long the plalists were
-        self.assertGreaterEqual(play_time,24.0) # how long we took playing it before we returned
+        self.assertGreaterEqual(play_time,2.0) # how long we took playing it before we returned
+        self.assertLess(play_time,2.5) # how long we took playing it before we returned
 
 class WebServer(threading.Thread):
     def __init__(self):

@@ -5,7 +5,7 @@ import hlslocust.hls as hls
 class UserBehavior(TaskSet):
     @task()
     def play(self):
-        self.client.play('http://localhost:8000/example/NTV-Public-IPS.m3u8')
+        self.client.play('http://testsite.zzz106.pub/liveBlind/index.m3u8', duration=600)
 
 class HLSUser(hls.HLSLocust):
     task_set = UserBehavior
