@@ -6,7 +6,7 @@ import time
 from locust import events,Locust
 
 BUFFERTIME = 10.0 # time to wait before playing
-MAXMANIFESTAGE = 20.0
+MAXMANIFESTAGE = 10.0
 
 class HLSLocust(Locust):
     def __init__(self, *args, **kwargs):
@@ -56,13 +56,13 @@ class Player():
 
         # currently I randomly pick a quality, unless it's given...
         if quality is None:
-            url = urlparse.urljoin(baseUrl, random.choice(self.playlists).name)
+            playlist_url = urlparse.urljoin(baseUrl, random.choice(self.playlists).name)
         else:
             i = quality%len(self.playlist)
-            url = urlparse.urljoin(baseUrl, self.playlists[i].name)
+            playlist_url = urlparse.urljoin(baseUrl, self.playlists[i].name)
 
         # request media playlist
-        r = self.request(url)
+        r = self.request(playlist_url)
         if r:
             self.parse(r.text)
         else: 
@@ -97,10 +97,11 @@ class Player():
             if playing:
                 # should we grab a new manifest?
                 manifest_age = (time.time() - last_manifest_time)
-                #if manifest_age > MAXMANIFESTAGE: # TODO, new manifest will fill downloaded files here
-                    #r = self.request(url)
-                    #if r:
-                        #self.parse(r.text)
+                if manifest_age > MAXMANIFESTAGE: # TODO, new manifest will fill downloaded files here
+                    r = self.request(playlist_url)
+                    last_manifest_time = time.time()
+                    if r:
+                        self.parse(r.text)
 
                 # am I underrunning?
                 play_time = (time.time() - start_time)
