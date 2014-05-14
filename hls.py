@@ -78,13 +78,16 @@ class Player():
         playing = False
         last_manifest_time = time.time()
 
+        idx = 0
+
         while True :
             # should I download an object?
-            if len(self.queue) > 0 :
-                a = self.queue.pop(0)
+            if idx < len(self.queue):
+                a = self.queue[idx]
                 url = urlparse.urljoin(baseUrl, a.name)
                 r = self.request(url)
                 buffer_time += a.duration
+                idx+=1
 
             # should we start playing?
             if not playing and buffer_time > BUFFERTIME:
@@ -102,7 +105,7 @@ class Player():
                 # am I underrunning?
                 play_time = (time.time() - start_time)
                 if play_time > buffer_time:
-                    if len(self.queue)>0:
+                    if idx < len(self.queue):
                         # we've run out of buffer but we still have parts to download
                         raise ValueError # underrun
                     # we've finished?
