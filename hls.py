@@ -49,10 +49,15 @@ class Player():
         return None
 
     def play(self, url=None, quality=None, duration=None):
+
+        # forget 
+        self.playlists = None
+        self.queue = None
+
         baseUrl = url
 
         # request master playlist
-        r = self.request(url)
+        r = self.request(baseUrl)
         if r:
             self.parse(r.text)
         else: 
