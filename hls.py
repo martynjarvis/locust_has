@@ -7,6 +7,7 @@ from locust import events,Locust
 
 BUFFERTIME = 10.0 # time to wait before playing
 MAXMANIFESTAGE = 20.0
+MAXRETRIES = 2
 
 class HLSLocust(Locust):
     def __init__(self, *args, **kwargs):
@@ -28,6 +29,7 @@ class Player():
 
         try:
             r = requests.get(url)
+            r.raise_for_status() # requests wont raise http error for 404 otherwise
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.HTTPError, 
                 requests.exceptions.Timeout,
@@ -83,6 +85,7 @@ class Player():
         last_manifest_time = time.time()
 
         idx = 0
+        retries = 0
 
         while True :
             # should I download an object?
@@ -90,8 +93,17 @@ class Player():
                 a = self.queue[idx]
                 url = urlparse.urljoin(baseUrl, a.name)
                 r = self.request(url,'Segment ({url})'.format(url=playlist_url))
-                buffer_time += a.duration
-                idx+=1
+                if r:
+                    idx+=1
+                    buffer_time += a.duration
+                else:
+                    retries +=1
+                    if retries >= MAXRETRIES:
+                        play_time = 0
+                        if start_time:
+                            play_time = (time.time() - start_time)
+                        return (buffer_time,play_time)
+
 
             # should we start playing?
             if not playing and buffer_time > BUFFERTIME: # TODO num segments?

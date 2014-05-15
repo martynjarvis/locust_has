@@ -9,6 +9,8 @@ import hlslocust.hls as hls
 # allow sockets to be reused when we rerun tests
 SocketServer.TCPServer.allow_reuse_address = True
 
+#TODO test non existing files
+
 class TddSplitting(unittest.TestCase):
     def test_simple_split(self):
         self.assertEqual(list(hls.mySplit('1,2,3,4')),
