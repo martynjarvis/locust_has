@@ -127,6 +127,9 @@ class Player():
                         raise ValueError # underrun
                     # we've finished a vod?
                     else :
+                        # TODO there is a 'stream end' attribute which I should
+                        # check for. What I'm doing here will think that a live
+                        # stream that has stopped ingressing is finished
                         return (buffer_time,play_time)
                 # have we seen enough?
                 if duration and play_time > duration :
