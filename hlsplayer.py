@@ -33,14 +33,15 @@ class Player():
 
         # download and parse media playlist
         playlist.download()
+        last_manifest_time = time.time()
 
+        # serves as an index for the fragments
+        msq = playlist.first_media_sequence()  
+
+        retries = 0
         start_time = None
         buffer_time = 0.0
         playing = False
-        last_manifest_time = time.time()
-
-        msq = playlist.media_sequence # 
-        retries = 0
 
         while True :
             # should I download an object?
@@ -53,7 +54,7 @@ class Player():
                 else:
                     # TODO, think about this, if I fail to download a single
                     # segment enough times I stop playing. Should I not keep
-                    # playing until I run out of buffer the 'buffer underrun'?
+                    # playing until I run out of buffer then 'buffer underrun'?
                     retries +=1
                     if retries >= MAXRETRIES:
                         play_time = 0

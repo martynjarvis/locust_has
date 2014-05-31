@@ -95,7 +95,9 @@ class MediaPlaylist(HLSObject):
                 name = lines[i+1].rstrip() # next line
                 if not ms_counter:
                     ms_counter = self.media_sequence
-                if not name.startswith('#'):# TODO, bit of a hack here
+                if not name.startswith('#'):
+                    # TODO, bit of a hack here. Some manifests put an attribute
+                    # line on the first fragment which breaks this.
                     if name not in [x.name for x in self.media_fragments]:
                         url = urlparse.urljoin(self.url, name) # construct absolute url
                         self.media_fragments.append(MediaFragment(name,
