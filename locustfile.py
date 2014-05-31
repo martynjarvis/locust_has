@@ -1,7 +1,7 @@
 import random
 from locust import TaskSet, task
 
-import hlslocust.hls as hls
+import hlslocust.hlsplayer as hlsplayer
 
 class UserBehavior(TaskSet):
     @task
@@ -10,7 +10,7 @@ class UserBehavior(TaskSet):
         self.client.play('http://www.nasa.gov/multimedia/nasatv/NTV-Public-IPS.m3u8',
                          duration=duration)
 
-class HLSUser(hls.HLSLocust):
+class HLSUser(hlsplayer.HLSLocust):
     task_set = UserBehavior
     min_wait=  2*1000 # 2 seconds
     max_wait=  5*1000 # 2 minute

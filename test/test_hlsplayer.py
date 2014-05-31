@@ -42,6 +42,4 @@ class WebServer(threading.Thread):
     def stop(self):
         self.httpd.shutdown()
 
-if __name__ == '__main__':
-    unittest.main()
    
