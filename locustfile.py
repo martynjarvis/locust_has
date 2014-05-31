@@ -7,7 +7,7 @@ class UserBehavior(TaskSet):
     @task
     def play_random(self):
         duration = random.randint(60, 600) 
-        self.client.play('http://localhost:8000/NTV-Public-IPS.m3u8',
+        self.client.play('http://www.nasa.gov/multimedia/nasatv/NTV-Public-IPS.m3u8',
                          duration=duration)
 
 class HLSUser(hls.HLSLocust):

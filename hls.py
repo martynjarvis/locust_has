@@ -5,10 +5,10 @@ import gevent
 import time
 from locust import events,Locust
 
-import hlserror
+import hlslocust.hlserror as hlserror
+import hlslocust.cast as cast
 
 BUFFERTIME = 10.0 # time to wait before playing
-MAXMANIFESTAGE = 20.0
 MAXRETRIES = 2
 
 class HLSLocust(Locust):
@@ -17,10 +17,10 @@ class HLSLocust(Locust):
         self.client = Player()
 
 class HLSObject(object):
-    def request(self,name=None):
-        start_time = time.time()
+    def request(self, name=None):
         if name is None:
-            name = self.url
+            name = self.url # I want to log full url
+        start_time = time.time()
 
         try:
             r = requests.get(self.url)
@@ -70,7 +70,7 @@ class MasterPlaylist(HLSObject):
         for i,line in enumerate(lines):
             if line.startswith('#EXT-X-STREAM-INF'):
                 key,val = line.split(':')
-                attr = myCast(val)
+                attr = cast.my_cast(val)
                 name = lines[i+1].rstrip() # next line 
                 url = urlparse.urljoin(self.url, name) # construct absolute url
                 self.media_playlists.append(MediaPlaylist(name,url,attr))
@@ -80,8 +80,8 @@ class MasterPlaylist(HLSObject):
                 except ValueError:
                     key = line
                     val = True
-                key = attrName(key)
-                val = myCast(val)
+                key = cast.attr_name(key)
+                val = cast.my_cast(val)
                 setattr(self,key,val)
 
 
@@ -101,13 +101,15 @@ class MediaPlaylist(HLSObject):
         for i,line in enumerate(lines):
             if line.startswith('#EXTINF'):
                 key,val = line.split(':')
-                attr = myCast(val)
+                attr = cast.my_cast(val)
                 name = lines[i+1].rstrip() # next line
                 if not name.startswith('#'):# TODO, bit of a hack here
                     if name not in [x.name for x in self.media_fragments]:
                         url = urlparse.urljoin(self.url, name) # construct absolute url
-                        #name = 'Segment ({url})'.format(url=self.url)) # TODO
-                        self.media_fragments.append(MediaFragment(name,url,attr))
+                        self.media_fragments.append(MediaFragment(name,
+                                                                  url,
+                                                                  attr,
+                                                                  self))
 
             elif line.startswith('#EXT-X-'): # TODO media sequence special case
                 try:
@@ -115,18 +117,20 @@ class MediaPlaylist(HLSObject):
                 except ValueError:
                     key = line
                     val = True
-                key = attrName(key)
-                val = myCast(val)
+                key = cast.attr_name(key)
+                val = cast.my_cast(val)
                 setattr(self,key,val)
 
 class MediaFragment(HLSObject):
-    def __init__(self,name,url,attributes):
+    def __init__(self,name,url,attributes,parent=None):
         self.url=url
         self.name=name
+        self.parent = parent
         self.duration = attributes[0] # only attrib??
 
     def download(self):
-        r = self.request(name=self.name)
+        name = 'Segment ({url})'.format(url=self.parent.url)
+        r = self.request(name=name)
         if r:
             return True
         else:
@@ -170,6 +174,9 @@ class Player():
                     idx+=1
                     buffer_time += a.duration
                 else:
+                    # TODO, think about this, if I fail to download a single
+                    # segment enough times I stop playing. Should I not keep
+                    # playing until I run out of buffer the 'buffer underrun'?
                     retries +=1
                     if retries >= MAXRETRIES:
                         play_time = 0
@@ -186,7 +193,7 @@ class Player():
             if playing:
                 # should we grab a new manifest?
                 manifest_age = (time.time() - last_manifest_time)
-                if manifest_age > MAXMANIFESTAGE: 
+                if manifest_age > playlist.targetduration*2:  # vlc does this
                     r = playlist.download()
                     if r == True:
                         last_manifest_time = time.time()
@@ -200,7 +207,8 @@ class Player():
                                                     'files still to download')
                         events.request_failure.fire(request_type="GET",
                                                     name=playlist.url, 
-                                                    response_time=play_time, exception=e)
+                                                    response_time=play_time,
+                                                    exception=e)
                         return (buffer_time,play_time)
                     if playlist.endlist:
                         # we've finished a vod (or live stream ended)
@@ -212,82 +220,12 @@ class Player():
                                                    'new files to download.')
                         events.request_failure.fire(request_type="GET",
                                                     name=playlist.url, 
-                                                    response_time=play_time, exception=e)
+                                                    response_time=play_time,
+                                                    exception=e)
                         return (buffer_time,play_time)
 
                 # have we seen enough?
                 if duration and play_time > duration :
                     return (buffer_time,play_time)
-            gevent.sleep(1) # yield execution # TODO 1 second? to avoid 100% cpu?
-
-def myBool(a):
-    if a.strip().lower()=='no':
-        return False
-    elif a.strip().lower()=='yes':
-        return True
-    raise ValueError
-
-def myDict(a):
-    a = list(mySplit(a))
-    dct = {}
-    for b in a:
-        key,val = b.split('=')
-        key = attrName(key)
-        dct[key] = myCast(val)
-    return dct
-
-def myList(a):
-    a = list(mySplit(a))
-    if len(a)>1:
-        return [myCast(x) for x in a]
-    else:
-        raise ValueError
-
-def mySplit(string,sep=','):
-    start = 0
-    end = 0
-    inString = False
-    while end < len(string):
-        if string[end] not in sep or inString: # mid string
-            if string[end] in '\'\"':
-                inString = not inString
-            end +=1
-        else: # separator
-            yield string[start:end]
-            end +=1
-            start = end
-    if start != end:# ignore empty items
-        yield string[start:end]
-
-def attrName(key):
-    return key.replace('#EXT-X-','').replace('-','_').lower()
-
-def myCast(val):
-    # intelligent casting ish
-    try:
-        return int(val)
-    except ValueError:
-        pass
-
-    try:
-        return float(val)
-    except ValueError:
-        pass
-
-    try:
-        return myBool(val)
-    except ValueError:
-        pass
-
-    try:
-        return myDict(val)
-    except ValueError:
-        pass
-
-    try:
-        return myList(val)
-    except ValueError:
-        pass
-
-    return val
+            gevent.sleep(1) # yield execution to another thread
 
