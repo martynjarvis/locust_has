@@ -1,6 +1,7 @@
 import requests
 import urlparse
 import time
+from locust import events
 
 import hlslocust.cast as cast
 

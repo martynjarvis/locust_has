@@ -4,7 +4,7 @@ import SocketServer
 import threading
 from mock import patch, Mock
  
-import hlslocust.hls as hls
+import hlslocust.hlsplayer as hlsplayer
 
 # allow sockets to be reused when we rerun tests
 SocketServer.TCPServer.allow_reuse_address = True
@@ -14,7 +14,7 @@ time_mock.side_effect = [(30.0*x/10) for x in range(0,10)]
 
 class TddPlay(unittest.TestCase):
     def setUp(self):
-        self.hls_player = hls.Player()
+        self.hls_player = hlsplayer.Player()
         self.server = WebServer()
         self.server.start()
 
