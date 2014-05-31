@@ -5,6 +5,8 @@ import gevent
 import time
 from locust import events,Locust
 
+import hlserror
+
 BUFFERTIME = 10.0 # time to wait before playing
 MAXMANIFESTAGE = 20.0
 MAXRETRIES = 2
@@ -88,6 +90,7 @@ class MediaPlaylist(HLSObject):
         self.name=name
         self.url=url
         self.media_fragments = []
+        self.endlist = False
         if attributes:
             for k in attributes:
                 setattr(self,k,attributes[k])
@@ -189,16 +192,29 @@ class Player():
                         last_manifest_time = time.time()
 
                 play_time = (time.time() - start_time)
-                # am I underrunning?
-                if play_time > buffer_time:
-                    if idx < len(playlist.media_framgents):
-                        # we've run out of buffer but we still have parts to download
-                        #TODO fail not exception
-                        raise ValueError # underrun
-                    # we've finished a vod?
-                    #TODO chek for end stream atribute
-                    else :
+                if play_time >= buffer_time:
+                    if idx < len(playlist.media_fragments):
+                        # we've run out of buffer but we still have parts to
+                        # download
+                        e = hlserror.BufferUnderrun('Buffer is empty with '
+                                                    'files still to download')
+                        events.request_failure.fire(request_type="GET",
+                                                    name=playlist.url, 
+                                                    response_time=play_time, exception=e)
                         return (buffer_time,play_time)
+                    if playlist.endlist:
+                        # we've finished a vod (or live stream ended)
+                        return (buffer_time,play_time)
+                    else:
+                        # we've downloaded and played all the fragments, but
+                        # we've not been told that the stream has finished
+                        e = hlserror.StaleManifest('Buffer is empty with no '
+                                                   'new files to download.')
+                        events.request_failure.fire(request_type="GET",
+                                                    name=playlist.url, 
+                                                    response_time=play_time, exception=e)
+                        return (buffer_time,play_time)
+
                 # have we seen enough?
                 if duration and play_time > duration :
                     return (buffer_time,play_time)
