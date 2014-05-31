@@ -27,16 +27,16 @@ class TddSplitting(unittest.TestCase):
         self.assertEqual(list(cast.my_split('test')), ['test'])
 
 class TddCasting(unittest.TestCase):
-    def test_castInt(self):
+    def test_cast_int(self):
         self.assertEqual(cast.my_cast('1'),1)
         self.assertEqual(cast.my_cast('-1'),-1)
 
-    def test_castFloat(self):
+    def test_cast_float(self):
         self.assertEqual(cast.my_cast('1.5'),1.5)
         self.assertEqual(cast.my_cast('1.0'),1.0)
         self.assertEqual(cast.my_cast('-1.0'),-1.0)
 
-    def test_castBool(self):
+    def test_cast_bool(self):
         self.assertEqual(cast.my_cast('NO'),False)
         self.assertEqual(cast.my_cast('No'),False)
         self.assertEqual(cast.my_cast('no'),False)
@@ -44,10 +44,10 @@ class TddCasting(unittest.TestCase):
         self.assertEqual(cast.my_cast('Yes'),True)
         self.assertEqual(cast.my_cast('yes'),True)
 
-    def test_castList(self):
+    def test_cast_list(self):
         self.assertEqual(cast.my_cast('No,10,100.0'),[False,10,100.0])
 
-    def test_castDict(self):
+    def test_cast_dict(self):
         self.assertEqual(cast.my_cast('PROGRAM-ID=1127167744,BANDWIDTH=1000000'),
                          {'program_id':1127167744,'bandwidth':1000000})
 
