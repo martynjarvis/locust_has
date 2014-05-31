@@ -14,21 +14,14 @@ class HLSLocust(Locust):
         super(HLSLocust, self).__init__(*args, **kwargs)
         self.client = Player()
 
-class Player():
-    playlists=None
-    queue = None
-    # TODO, all attr should exist on these objects, rather than player object
-
-    def __init__(self):
-        pass
-
-    def request(self,url,name=None):
+class HLSObject(object):
+    def request(self,name=None):
         start_time = time.time()
         if name is None:
-            name = url
+            name = self.url
 
         try:
-            r = requests.get(url)
+            r = requests.get(self.url)
             r.raise_for_status() # requests wont raise http error for 404 otherwise
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.HTTPError, 
@@ -50,34 +43,112 @@ class Player():
             return r
         return None
 
+    def download(self):
+        r = self.request()
+        if r:
+            self.parse(r.text)
+            return True
+        else:
+            return False
+
+class MasterPlaylist(HLSObject):
+    def __init__(self,name,url,attributes=None):
+        self.name=name
+        self.url=url
+        self.media_playlists = []
+        if attributes:
+            for k in attributes:
+                setattr(self,k,attributes[k])
+
+    def parse(self,manifest):
+        self.media_playlists = []
+        lines = manifest.split('\n')
+        assert(lines[0].startswith('#EXTM3U'))
+
+        for i,line in enumerate(lines):
+            if line.startswith('#EXT-X-STREAM-INF'):
+                key,val = line.split(':')
+                attr = myCast(val)
+                name = lines[i+1].rstrip() # next line 
+                url = urlparse.urljoin(self.url, name) # construct absolute url
+                self.media_playlists.append(MediaPlaylist(name,url,attr))
+            elif line.startswith('#EXT-X-'):
+                try:
+                    key,val = line.split(':')
+                except ValueError:
+                    key = line
+                    val = True
+                key = attrName(key)
+                val = myCast(val)
+                setattr(self,key,val)
+
+
+class MediaPlaylist(HLSObject):
+    def __init__(self,name,url,attributes=None):
+        self.name=name
+        self.url=url
+        self.media_fragments = []
+        if attributes:
+            for k in attributes:
+                setattr(self,k,attributes[k])
+
+    def parse(self,manifest):
+        lines = manifest.split('\n')
+        assert(lines[0].startswith('#EXTM3U'))
+        for i,line in enumerate(lines):
+            if line.startswith('#EXTINF'):
+                key,val = line.split(':')
+                attr = myCast(val)
+                name = lines[i+1].rstrip() # next line
+                if not name.startswith('#'):# TODO, bit of a hack here
+                    if name not in [x.name for x in self.media_fragments]:
+                        url = urlparse.urljoin(self.url, name) # construct absolute url
+                        #name = 'Segment ({url})'.format(url=self.url)) # TODO
+                        self.media_fragments.append(MediaFragment(name,url,attr))
+
+            elif line.startswith('#EXT-X-'): # TODO media sequence special case
+                try:
+                    key,val = line.split(':')
+                except ValueError:
+                    key = line
+                    val = True
+                key = attrName(key)
+                val = myCast(val)
+                setattr(self,key,val)
+
+class MediaFragment(HLSObject):
+    def __init__(self,name,url,attributes):
+        self.url=url
+        self.name=name
+        self.duration = attributes[0] # only attrib??
+
+    def download(self):
+        r = self.request(name=self.name)
+        if r:
+            return True
+        else:
+            return False
+
+class Player():
+    def __init__(self):
+        pass
+
     def play(self, url=None, quality=None, duration=None):
-
-        # forget 
-        self.playlists = None
-        self.queue = None
-
         baseUrl = url
 
-        # request master playlist
-        r = self.request(baseUrl)
-        if r:
-            self.parse(r.text)
-        else: 
-            return
+        # download and parse master playlist
+        self.master_playlist = MasterPlaylist('master',baseUrl)
+        self.master_playlist.download()  
 
-        # currently I randomly pick a quality, unless it's given...
+        # I randomly pick a quality, unless it's specified...
         if quality is None:
-            playlist_url = urlparse.urljoin(baseUrl, random.choice(self.playlists).name)
+            playlist = random.choice(self.master_playlist.media_playlists)
         else:
-            i = quality%len(self.playlist)
-            playlist_url = urlparse.urljoin(baseUrl, self.playlists[i].name)
+            i = quality%len(self.master_playlist.media_playlists)
+            playlist = self.master_playlist.media_playlists[i]
 
-        # request media playlist
-        r = self.request(playlist_url)
-        if r:
-            self.parse(r.text)
-        else: 
-            return
+        # download and parse media playlist
+        playlist.download()
 
         start_time = None
         buffer_time = 0.0
@@ -89,11 +160,10 @@ class Player():
 
         while True :
             # should I download an object?
-            if idx < len(self.queue):
-                a = self.queue[idx]
-                url = urlparse.urljoin(baseUrl, a.name)
-                r = self.request(url,'Segment ({url})'.format(url=playlist_url))
-                if r:
+            if idx < len(playlist.media_fragments):
+                a = playlist.media_fragments[idx]
+                r = a.download()
+                if r == True:
                     idx+=1
                     buffer_time += a.duration
                 else:
@@ -106,90 +176,33 @@ class Player():
 
 
             # should we start playing?
-            if not playing and buffer_time > BUFFERTIME: # TODO num segments?
+            if not playing and buffer_time > BUFFERTIME: 
                 playing = True
                 start_time = time.time()
 
             if playing:
                 # should we grab a new manifest?
                 manifest_age = (time.time() - last_manifest_time)
-                if manifest_age > MAXMANIFESTAGE: # TODO, new manifest will fill downloaded files here
-                    r = self.request(playlist_url)
-                    last_manifest_time = time.time()
-                    if r:
-                        self.parse(r.text)
+                if manifest_age > MAXMANIFESTAGE: 
+                    r = playlist.download()
+                    if r == True:
+                        last_manifest_time = time.time()
 
                 play_time = (time.time() - start_time)
                 # am I underrunning?
                 if play_time > buffer_time:
-                    if idx < len(self.queue):
+                    if idx < len(playlist.media_framgents):
                         # we've run out of buffer but we still have parts to download
+                        #TODO fail not exception
                         raise ValueError # underrun
                     # we've finished a vod?
+                    #TODO chek for end stream atribute
                     else :
                         return (buffer_time,play_time)
                 # have we seen enough?
                 if duration and play_time > duration :
                     return (buffer_time,play_time)
             gevent.sleep(1) # yield execution # TODO 1 second? to avoid 100% cpu?
-
-    def parse(self,manifest):
-
-        # remember old playlists
-        oldPlaylists = self.playlists
-        self.playlists = None
-
-        lines = manifest.split('\n')
-        for i,line in enumerate(lines):
-            if line.startswith('#'):
-                # TODO, fix parsing, I think EXT-X extents the previous EXT line
-                if 'EXT-X-STREAM-INF' in line: # media playlist special case
-                    if self.playlists is None:
-                        self.playlists = [] # forget old playlists
-                    key,val = line.split(':')
-                    attr = myCast(val)
-                    name = lines[i+1].rstrip() # next line 
-                    self.playlists.append(MediaPlaylist(name,attr))
-
-                if 'EXTINF' in line: # fragment special case
-                    if self.queue is None:
-                        self.queue = []
-                    key,val = line.split(':')
-                    attr = myCast(val)
-                    name = lines[i+1].rstrip() # next line
-                    if not name.startswith('#'):# TODO, bit of a hack here
-                        if name not in [x.name for x in self.queue]:
-                            self.queue.append(MediaFragment(name,attr))
-
-                elif line.startswith('#EXT-X-'):
-                    try:
-                        key,val = line.split(':')
-                    except ValueError:
-                        key = line
-                        val = True
-                    key = attrName(key)
-                    val = myCast(val)
-                    setattr(self,key,val)
-
-        # playlists weren't updated so keep old playlists
-        if self.playlists == None:
-            self.playlists = oldPlaylists
-
-        return
-
-class MasterPlaylist():
-    pass
-
-class MediaPlaylist():
-    def __init__(self,name,attributes):
-        self.name = name
-        for k in attributes:
-            setattr(self,k,attributes[k])
-
-class MediaFragment():
-    def __init__(self,name,attributes):
-        self.name = name
-        self.duration = attributes[0] # only attrib??
 
 def myBool(a):
     if a.strip().lower()=='no':
