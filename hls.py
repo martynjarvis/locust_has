@@ -141,10 +141,9 @@ class Player():
         pass
 
     def play(self, url=None, quality=None, duration=None):
-        baseUrl = url
 
         # download and parse master playlist
-        self.master_playlist = MasterPlaylist('master',baseUrl)
+        self.master_playlist = MasterPlaylist('master',url)
         self.master_playlist.download()  
 
         # I randomly pick a quality, unless it's specified...
