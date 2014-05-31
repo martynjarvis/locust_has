@@ -57,6 +57,11 @@ class TddMediaPlaylist(unittest.TestCase):
                  'public_200/Num32464.ts',
                  'public_200/Num32465.ts'])
 
+    def test_fragment_sequence(self):
+        filenames = [x.media_sequence for x in self.media_playlist.media_fragments]
+        self.assertEqual(filenames, [32458, 32459, 32460, 32461, 32462, 32463,
+                                     32464, 32465])
+
     def test_fragment_urls(self):
         filenames = [x.url for x in self.media_playlist.media_fragments]
         self.assertEqual(filenames,
@@ -74,9 +79,16 @@ class TddMediaPlaylist(unittest.TestCase):
         self.assertEqual(durations, [3]*8)
 
     def test_media_playlist_attributes(self):
-        self.assertEqual(self.media_playlist.media_sequence, 32458)
         self.assertEqual(self.media_playlist.allow_cache, False)
         self.assertEqual(self.media_playlist.version, 2)
+        self.assertEqual(self.media_playlist.targetduration, 3)
+        self.assertEqual(self.media_playlist.endlist, False)
+        self.assertEqual(self.media_playlist.media_sequence, 32458)
+
+    def test_media_sequence(self):
+        self.assertEqual(self.media_playlist.first_media_sequence(), 32458)
+        self.assertEqual(self.media_playlist.last_media_sequence(), 32465)
+        self.assertEqual(self.media_playlist.get_media_fragment(32460).media_sequence, 32460)
 
     def test_duplicate_fragments(self):
         with open('example/public_200.m3u8') as f:

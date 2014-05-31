@@ -6,8 +6,11 @@ import hlslocust.hlsplayer as hlsplayer
 class UserBehavior(TaskSet):
     @task
     def play_random(self):
-        duration = random.randint(60, 600) 
-        self.client.play('http://www.nasa.gov/multimedia/nasatv/NTV-Public-IPS.m3u8',
+        #duration = random.randint(600, 1200) 
+        duration = 3600
+        #self.client.play('http://www.nasa.gov/multimedia/nasatv/NTV-Public-IPS.m3u8',
+                         #duration=duration)
+        self.client.play('http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8',
                          duration=duration)
 
 class HLSUser(hlsplayer.HLSLocust):

@@ -39,16 +39,16 @@ class Player():
         playing = False
         last_manifest_time = time.time()
 
-        idx = 0
+        msq = playlist.media_sequence # 
         retries = 0
 
         while True :
             # should I download an object?
-            if idx < len(playlist.media_fragments):
-                a = playlist.media_fragments[idx]
+            if msq <= playlist.last_media_sequence():
+                a = playlist.get_media_fragment(msq)
                 r = a.download()
                 if r == True:
-                    idx+=1
+                    msq+=1
                     buffer_time += a.duration
                 else:
                     # TODO, think about this, if I fail to download a single
@@ -69,15 +69,16 @@ class Player():
 
             if playing:
                 # should we grab a new manifest?
-                manifest_age = (time.time() - last_manifest_time)
-                if manifest_age > playlist.targetduration*2:  # vlc does this
-                    r = playlist.download()
-                    if r == True:
-                        last_manifest_time = time.time()
+                if not playlist.endlist: # only update manifest on live
+                    manifest_age = (time.time() - last_manifest_time)
+                    if manifest_age > playlist.targetduration*2:  # vlc does this
+                        r = playlist.download()
+                        if r == True:
+                            last_manifest_time = time.time()
 
                 play_time = (time.time() - start_time)
                 if play_time >= buffer_time:
-                    if idx < len(playlist.media_fragments):
+                    if msq <= playlist.last_media_sequence():
                         # we've run out of buffer but we still have parts to
                         # download
                         e = hlserror.BufferUnderrun('Buffer is empty with '

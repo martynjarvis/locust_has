@@ -85,6 +85,7 @@ class MediaPlaylist(HLSObject):
                 setattr(self,k,attributes[k])
 
     def parse(self,manifest):
+        ms_counter = None
         lines = manifest.split('\n')
         assert(lines[0].startswith('#EXTM3U'))
         for i,line in enumerate(lines):
@@ -92,15 +93,18 @@ class MediaPlaylist(HLSObject):
                 key,val = line.split(':')
                 attr = cast.my_cast(val)
                 name = lines[i+1].rstrip() # next line
+                if not ms_counter:
+                    ms_counter = self.media_sequence
                 if not name.startswith('#'):# TODO, bit of a hack here
                     if name not in [x.name for x in self.media_fragments]:
                         url = urlparse.urljoin(self.url, name) # construct absolute url
                         self.media_fragments.append(MediaFragment(name,
                                                                   url,
                                                                   attr,
-                                                                  self))
-
-            elif line.startswith('#EXT-X-'): # TODO media sequence special case
+                                                                  self,
+                                                                  ms_counter))
+                ms_counter += 1
+            elif line.startswith('#EXT-X-'): 
                 try:
                     key,val = line.split(':')
                 except ValueError:
@@ -110,14 +114,27 @@ class MediaPlaylist(HLSObject):
                 val = cast.my_cast(val)
                 setattr(self,key,val)
 
+    def first_media_sequence(self):
+        return self.media_fragments[0].media_sequence
+
+    def last_media_sequence(self):
+        return self.media_fragments[-1].media_sequence
+
+    def get_media_fragment(self, msq):
+        idx = msq - self.first_media_sequence()
+        assert(self.media_fragments[idx].media_sequence == msq) 
+        return self.media_fragments[idx]
+
 class MediaFragment(HLSObject):
-    def __init__(self,name,url,attributes,parent=None):
+    def __init__(self,name,url,attributes,parent=None, seq=None):
         self.url=url
         self.name=name
         self.parent = parent
         self.duration = attributes[0] # only attrib??
+        self.media_sequence = seq
 
     def download(self):
+        #assert(str(self.media_sequence) in self.name) # HACK
         name = 'Segment ({url})'.format(url=self.parent.url)
         r = self.request(name=name)
         if r:
