@@ -22,7 +22,9 @@ class Player():
 
         # download and parse master playlist
         self.master_playlist = hlsobject.MasterPlaylist('master',url)
-        self.master_playlist.download()  
+        r = self.master_playlist.download()  
+        if r is False:
+            return
 
         # I randomly pick a quality, unless it's specified...
         if quality is None:
@@ -32,8 +34,10 @@ class Player():
             playlist = self.master_playlist.media_playlists[i]
 
         # download and parse media playlist
-        playlist.download()
+        r = playlist.download()
         last_manifest_time = time.time()
+        if r is False:
+            return
 
         # serves as an index for the fragments
         msq = playlist.first_media_sequence()  
