@@ -1,7 +1,9 @@
 import random
 from locust import TaskSet, task
 
-import hlslocust.hls as hls
+import hlslocust.hlsplayer as hlsplayer
+
+SECONDS = 1000
 
 class UserBehavior(TaskSet):
     @task
@@ -9,8 +11,9 @@ class UserBehavior(TaskSet):
         duration = random.randint(60, 600) 
         #self.client.play('http://testsite.zzz106.pub/liveBlind/index.m3u8', duration=duration)
         self.client.play('http://192.168.233.131/wp/website-67-0.com/vxoa/ch0/hls/index.m3u8', duration=duration)
+        #self.client.play('http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8', duration=duration)
 
-class HLSUser(hls.HLSLocust):
+class HLSUser(hlsplayer.HLSLocust):
     task_set = UserBehavior
-    min_wait=  2*1000 # 2 seconds
-    max_wait=120*1000 # 2 minute
+    min_wait=  2*SECONDS # 2 seconds
+    max_wait=  5*SECONDS # 5 seconds
