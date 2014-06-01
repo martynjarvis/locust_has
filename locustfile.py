@@ -7,8 +7,8 @@ class UserBehavior(TaskSet):
     @task
     def play_random(self):
         duration = random.randint(60, 600) 
-        self.client.play('http://testsite.zzz106.pub/liveBlind/index.m3u8',
-                         duration=duration)
+        #self.client.play('http://testsite.zzz106.pub/liveBlind/index.m3u8', duration=duration)
+        self.client.play('http://192.168.233.131/wp/website-67-0.com/vxoa/ch0/hls/index.m3u8', duration=duration)
 
 class HLSUser(hls.HLSLocust):
     task_set = UserBehavior
