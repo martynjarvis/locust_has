@@ -4,3 +4,6 @@ class BufferUnderrun(Exception):
 class StaleManifest(Exception):
     pass
 
+class MissedFragment(Exception):
+    pass
+

@@ -4,6 +4,7 @@ import time
 from locust import events
 
 import hlslocust.cast as cast
+import hlslocust.hlserror as hlserror
 
 class HLSObject(object):
     def request(self, name=None):
@@ -98,7 +99,7 @@ class MediaPlaylist(HLSObject):
                 if not name.startswith('#'):
                     # TODO, bit of a hack here. Some manifests put an attribute
                     # line on the first fragment which breaks this.
-                    if ms_counter not in [x.media_sequence for x in self.media_fragments]:
+                    if ms_counter > self.last_media_sequence():
                         url = urlparse.urljoin(self.url, name) # construct absolute url
                         self.media_fragments.append(MediaFragment(name,
                                                                   url,
@@ -117,14 +118,21 @@ class MediaPlaylist(HLSObject):
                 setattr(self,key,val)
 
     def first_media_sequence(self):
-        return self.media_fragments[0].media_sequence
+        try:
+            return self.media_fragments[0].media_sequence
+        except IndexError:
+            return -1 
 
     def last_media_sequence(self):
-        return self.media_fragments[-1].media_sequence
+        try:
+            return self.media_fragments[-1].media_sequence
+        except IndexError:
+            return -1 
 
     def get_media_fragment(self, msq):
         idx = msq - self.first_media_sequence()
-        assert(self.media_fragments[idx].media_sequence == msq) 
+        if self.media_fragments[idx].media_sequence != msq:
+            raise MissedFragment('Fragments are not numbered sequentially')
         return self.media_fragments[idx]
 
 class MediaFragment(HLSObject):

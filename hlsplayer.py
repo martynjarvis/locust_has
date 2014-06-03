@@ -50,7 +50,18 @@ class Player():
         while True :
             # should I download an object?
             if msq <= playlist.last_media_sequence():
-                a = playlist.get_media_fragment(msq)
+                try:
+                    a = playlist.get_media_fragment(msq)
+                except hlserror.MissedFragment as e:
+                    events.request_failure.fire(request_type="GET",
+                                                name=playlist.url, 
+                                                response_time=play_time,
+                                                exception=e)
+                    play_time = None
+                    if playing:
+                        play_time = (time.time() - start_time)
+                    return (buffer_time,play_time)
+
                 r = a.download()
                 if r == True:
                     msq+=1
