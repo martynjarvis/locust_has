@@ -19,11 +19,11 @@ def my_dict(a):
     return dct
 
 def my_list(a):
-    a = list(my_split(a))
-    if len(a)>1:
-        return [my_cast(x) for x in a]
-    else:
+    if not ',' in a:
         raise ValueError
+    a = list(my_split(a))
+    if len(a)>=1:  # TODO think about this
+        return [my_cast(x) for x in a]
 
 def my_split(string,sep=','):
     start = 0
