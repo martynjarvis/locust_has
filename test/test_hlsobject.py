@@ -2,7 +2,7 @@ import unittest
  
 import hlslocust.hlsobject as hlsobject
 
-class TddMasterPlaylist(unittest.TestCase):
+class TddMasterPlaylistLive(unittest.TestCase):
     def setUp(self):
         self.master_playlist = hlsobject.MasterPlaylist('master','test.com/index')
         with open('live-example/NTV-Public-IPS.m3u8') as f:
@@ -39,7 +39,7 @@ class TddMasterPlaylist(unittest.TestCase):
             self.master_playlist.parse(f.read())
         self.assertEqual(len(self.master_playlist.media_playlists),3)
 
-class TddMediaPlaylist(unittest.TestCase):
+class TddMediaPlaylistLive(unittest.TestCase):
     def setUp(self):
         self.media_playlist = hlsobject.MediaPlaylist('test','test.com/test')
         with open('live-example/public_200.m3u8') as f:
@@ -94,5 +94,16 @@ class TddMediaPlaylist(unittest.TestCase):
         with open('live-example/public_200.m3u8') as f:
             self.media_playlist.parse(f.read())
         self.assertEqual(len(self.media_playlist.media_fragments),8)
+
+class TddMediaPlaylistVod(unittest.TestCase):
+    def setUp(self):
+        self.media_playlist = hlsobject.MediaPlaylist('test','test.com/test')
+        with open('vod-example/01.m3u8') as f:
+            self.media_playlist.parse(f.read())
+
+    def test_media_playlist_attributes(self):
+        self.assertEqual(self.media_playlist.allow_cache, False)
+        self.assertEqual(self.media_playlist.targetduration, 3)
+        self.assertEqual(self.media_playlist.endlist, True)
 
    
