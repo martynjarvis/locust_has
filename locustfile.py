@@ -1,6 +1,5 @@
 import random
 from locust import TaskSet, task
-
 import hlslocust.hlsplayer as hlsplayer
 
 SECONDS = 1000  # ms in seconds
