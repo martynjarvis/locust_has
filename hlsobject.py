@@ -94,8 +94,11 @@ class MediaPlaylist(HLSObject):
                 key,val = line.split(':')
                 attr = cast.my_cast(val)
                 name = lines[i+1].rstrip() # next line
-                if not ms_counter:
-                    ms_counter = self.media_sequence
+                if not ms_counter:  # 
+                    try:
+                        ms_counter = self.media_sequence  # probably live
+                    except AttributeError:
+                        ms_counter = 1  # probably VOD
                 if not name.startswith('#'):
                     # TODO, bit of a hack here. Some manifests put an attribute
                     # line on the first fragment which breaks this.
