@@ -30,28 +30,22 @@ class TddPlay(unittest.TestCase):
 
     def setUp(self):
         self.hls_player = hlsplayer.Player()
-        #self.server = WebServer()
-        #self.server.start()
-
-    #def tearDown(self):
-        #self.server.stop()
-        #time.sleep(1)
 
     @patch('time.time', new=time_mock)
     @patch('gevent.sleep', return_value=None)
     def test_live_play(self, patched_sleep):
         buffer_time, play_time = self.hls_player.play(url='http://localhost:8000/live-example/NTV-Public-IPS.m3u8', duration=22)
-        self.assertEqual(buffer_time,24.0) # how long the plalists were
-        self.assertGreaterEqual(play_time,22.0) # how long we took playing it before we returned
-        self.assertLess(play_time,23.0) # how long we took playing it before we returned
+        self.assertEqual(buffer_time,24.0)  # 'duration' of 'downloaded' files 
+        self.assertGreaterEqual(play_time,22.0)  # duration of played files
+        self.assertLess(play_time,23.0) 
 
     @patch('time.time', new=time_mock)
     @patch('gevent.sleep', return_value=None)
     def test_vod_play(self, patched_sleep):
         buffer_time, play_time = self.hls_player.play(url='http://localhost:8000/vod-example/index.m3u8')
-        self.assertEqual(buffer_time,141.0) # how long the plalists were
-        self.assertGreaterEqual(play_time,141.0) # how long we took playing it before we returned
-        self.assertLess(play_time,142.0) # how long we took playing it before we returned
+        self.assertEqual(buffer_time,141.0) 
+        self.assertGreaterEqual(play_time,141.0) 
+        self.assertLess(play_time,142.0) 
 
 class WebServer(threading.Thread):
     def __init__(self):
