@@ -82,7 +82,7 @@ class TddMediaPlaylist(unittest.TestCase):
         self.assertEqual(self.media_playlist.allow_cache, False)
         self.assertEqual(self.media_playlist.version, 2)
         self.assertEqual(self.media_playlist.targetduration, 3)
-        self.assertEqual(self.media_playlist.endlist, False)
+        self.assertEqual(self.media_playlist.endlist, True)
         self.assertEqual(self.media_playlist.media_sequence, 32458)
 
     def test_media_sequence(self):

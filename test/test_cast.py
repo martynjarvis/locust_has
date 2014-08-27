@@ -42,6 +42,8 @@ class TddCasting(unittest.TestCase):
         self.assertEqual(cast.my_cast('YES'), True)
         self.assertEqual(cast.my_cast('Yes'), True)
         self.assertEqual(cast.my_cast('yes'), True)
+        self.assertEqual(cast.my_cast(True), True)
+        self.assertEqual(cast.my_cast(False), False)
 
     def test_cast_list(self):
         self.assertEqual(cast.my_cast('No,10,100.0'),[False,10,100.0])

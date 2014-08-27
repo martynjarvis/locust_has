@@ -68,8 +68,8 @@ class MasterPlaylist(HLSObject):
                 try:
                     key,val = line.split(':')
                 except ValueError:
-                    key = line
-                    val = True
+                    key = line[:]
+                    val = 'YES'
                 key = cast.attr_name(key)
                 val = cast.my_cast(val)
                 setattr(self,key,val)
@@ -114,8 +114,8 @@ class MediaPlaylist(HLSObject):
                 try:
                     key,val = line.split(':')
                 except ValueError:
-                    key = line
-                    val = True
+                    key = line[:]
+                    val = 'YES'
                 key = cast.attr_name(key)
                 val = cast.my_cast(val)
                 setattr(self,key,val)

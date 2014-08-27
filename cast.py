@@ -1,6 +1,6 @@
 
 def attr_name(key):
-    return key.replace('#EXT-X-','').replace('-','_').lower()
+    return key.strip().replace('#EXT-X-','').replace('-','_').lower()
 
 def my_bool(a):
     if a.strip().lower()=='no':
@@ -43,7 +43,10 @@ def my_split(string,sep=','):
 
 
 def my_cast(val):
-    # intelligent casting ish
+    if type(val) in (int, bool, float, list, dict):
+        return val
+
+    # intelligent casting sort of
     try:
         return int(val)
     except ValueError:
