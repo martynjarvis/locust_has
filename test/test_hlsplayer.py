@@ -24,7 +24,7 @@ class TddPlay(unittest.TestCase):
     #@patch('time.time', new=time_mock)
     @patch('gevent.sleep', return_value=None)
     def test_play(self, patched_sleep):
-        buffer_time, play_time = self.hls_player.play(url='http://localhost:8000/example/NTV-Public-IPS.m3u8',duration=2)
+        buffer_time, play_time = self.hls_player.play(url='http://localhost:8000/live-example/NTV-Public-IPS.m3u8',duration=2)
         self.assertEqual(buffer_time,24.0) # how long the plalists were
         self.assertGreaterEqual(play_time,2.0) # how long we took playing it before we returned
         self.assertLess(play_time,2.5) # how long we took playing it before we returned
