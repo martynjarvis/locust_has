@@ -22,7 +22,7 @@ class Player():
 
         # download and parse master playlist
         self.master_playlist = hlsobject.MasterPlaylist('master',url)
-        r = self.master_playlist.download()  
+        r = self.master_playlist.download()
         if r is False:
             return
 
@@ -40,7 +40,7 @@ class Player():
             return
 
         # serves as an index for the fragments
-        msq = playlist.first_media_sequence()  
+        msq = playlist.first_media_sequence()
 
         retries = 0
         start_time = None
@@ -54,7 +54,7 @@ class Player():
                     a = playlist.get_media_fragment(msq)
                 except hlserror.MissedFragment as e:
                     events.request_failure.fire(request_type="GET",
-                                                name=playlist.url, 
+                                                name=playlist.url,
                                                 response_time=play_time,
                                                 exception=e)
                     play_time = None
@@ -79,7 +79,7 @@ class Player():
 
 
             # should we start playing?
-            if not playing and buffer_time > BUFFERTIME: 
+            if not playing and buffer_time > BUFFERTIME:
                 playing = True
                 start_time = time.time()
 
@@ -100,7 +100,7 @@ class Player():
                         e = hlserror.BufferUnderrun('Buffer is empty with '
                                                     'files still to download')
                         events.request_failure.fire(request_type="GET",
-                                                    name=playlist.url, 
+                                                    name=playlist.url,
                                                     response_time=play_time,
                                                     exception=e)
                         return (buffer_time,play_time)
@@ -113,7 +113,7 @@ class Player():
                         e = hlserror.StaleManifest('Buffer is empty with no '
                                                    'new files to download.')
                         events.request_failure.fire(request_type="GET",
-                                                    name=playlist.url, 
+                                                    name=playlist.url,
                                                     response_time=play_time,
                                                     exception=e)
                         return (buffer_time,play_time)

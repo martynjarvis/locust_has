@@ -16,11 +16,11 @@ class HLSObject(object):
             r = requests.get(self.url)
             r.raise_for_status() # requests wont raise http error for 404 otherwise
         except (requests.exceptions.ConnectionError,
-                requests.exceptions.HTTPError, 
+                requests.exceptions.HTTPError,
                 requests.exceptions.Timeout,
                 requests.exceptions.TooManyRedirects) as e:
             total_time = int((time.time() - start_time) * 1000)
-            events.request_failure.fire(request_type="GET", name=name, 
+            events.request_failure.fire(request_type="GET", name=name,
                                         response_time=total_time, exception=e)
         else:
             total_time = int((time.time() - start_time) * 1000)
@@ -28,9 +28,9 @@ class HLSObject(object):
                 response_length = int(r.headers['Content-Length'])
             except KeyError:
                 response_length = 0
-                
-            events.request_success.fire(request_type="GET", name=name, 
-                                        response_time=total_time, 
+
+            events.request_success.fire(request_type="GET", name=name,
+                                        response_time=total_time,
                                         response_length=response_length)
             return r
         return None
@@ -61,7 +61,7 @@ class MasterPlaylist(HLSObject):
             if line.startswith('#EXT-X-STREAM-INF'):
                 key,val = line.split(':')
                 attr = cast.my_cast(val)
-                name = lines[i+1].rstrip() # next line 
+                name = lines[i+1].rstrip() # next line
                 url = urlparse.urljoin(self.url, name) # construct absolute url
                 self.media_playlists.append(MediaPlaylist(name,url,attr))
             elif line.startswith('#EXT-X-'):
@@ -94,7 +94,7 @@ class MediaPlaylist(HLSObject):
                 key,val = line.split(':')
                 attr = cast.my_cast(val)
                 name = lines[i+1].rstrip() # next line
-                if not ms_counter:  # 
+                if not ms_counter:  #
                     try:
                         ms_counter = self.media_sequence  # probably live
                     except AttributeError:
@@ -110,7 +110,7 @@ class MediaPlaylist(HLSObject):
                                                                   self,
                                                                   ms_counter))
                 ms_counter += 1
-            elif line.startswith('#EXT-X-'): 
+            elif line.startswith('#EXT-X-'):
                 try:
                     key,val = line.split(':')
                 except ValueError:
@@ -124,13 +124,13 @@ class MediaPlaylist(HLSObject):
         try:
             return self.media_fragments[0].media_sequence
         except IndexError:
-            return -1 
+            return -1
 
     def last_media_sequence(self):
         try:
             return self.media_fragments[-1].media_sequence
         except IndexError:
-            return -1 
+            return -1
 
     def get_media_fragment(self, msq):
         idx = msq - self.first_media_sequence()

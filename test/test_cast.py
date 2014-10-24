@@ -1,5 +1,5 @@
 import unittest
- 
+
 import hlslocust.cast as cast
 
 class TddSplitting(unittest.TestCase):
@@ -8,8 +8,6 @@ class TddSplitting(unittest.TestCase):
                          ['1','2','3','4'])
         self.assertEqual(list(cast.my_split('1,"2,3",4')),
                          ['1','"2,3"','4'])
-        self.assertEqual(list(cast.my_split("1,'2,3',4")),
-                         ['1',"'2,3'",'4'])
         self.assertEqual(list(cast.my_split("1,'2,3',4")),
                          ['1',"'2,3'",'4'])
 
@@ -21,7 +19,7 @@ class TddSplitting(unittest.TestCase):
 
     def test_trailing_comma(self):
         self.assertEqual(list(cast.my_split('1,2,3,')), ['1','2','3'])
-                
+
     def test_single_item(self):
         self.assertEqual(list(cast.my_split('test')), ['test'])
 

@@ -7,7 +7,7 @@ SECONDS = 1000  # ms in seconds
 class UserBehavior(TaskSet):
     @task
     def play_random(self):
-        duration = random.randint(60, 600) 
+        duration = random.randint(60, 600)
         self.client.play('http://testsite.zzz106s1.pub/hls/index.m3u8',
                          duration=duration)
 

@@ -1,5 +1,5 @@
 import unittest
- 
+
 import hlslocust.hlsobject as hlsobject
 
 class TddMasterPlaylistLive(unittest.TestCase):
@@ -106,4 +106,4 @@ class TddMediaPlaylistVod(unittest.TestCase):
         self.assertEqual(self.media_playlist.targetduration, 3)
         self.assertEqual(self.media_playlist.endlist, True)
 
-   
+
