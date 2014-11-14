@@ -7,3 +7,5 @@ class StaleManifest(Exception):
 class MissedFragment(Exception):
     pass
 
+class BadContentLength(Exception):
+    pass

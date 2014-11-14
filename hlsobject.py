@@ -28,7 +28,11 @@ class HLSObject(object):
                 response_length = int(r.headers['Content-Length'])
             except KeyError:
                 response_length = 0
-
+            if response_length != len(r.content):
+                e = hlserror.BadContentLength("content-length header did not match received content length")
+                events.request_failure.fire(request_type="GET", name=name,
+                                            response_time=total_time,
+                                            exception=e)
             events.request_success.fire(request_type="GET", name=name,
                                         response_time=total_time,
                                         response_length=response_length)
