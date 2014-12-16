@@ -26,12 +26,18 @@ class Player():
         if r is False:
             return
 
-        # I randomly pick a quality, unless it's specified...
-        if quality is None:
-            playlist = random.choice(self.master_playlist.media_playlists)
+        if len(self.master_playlist.media_playlists) == 0:
+	    # in this case we looked for media playlists, but didn't find any.
+	    # maybe we're looking at a stream that only has a single bitrate
+	    # and all the fragments are in the master playlist
+            playlist = hlsobject.MediaPlaylist('media',url)
         else:
-            i = quality%len(self.master_playlist.media_playlists)
-            playlist = self.master_playlist.media_playlists[i]
+            # I randomly pick a quality, unless it's specified...
+            if quality is None:
+                playlist = random.choice(self.master_playlist.media_playlists)
+            else:
+                i = quality%len(self.master_playlist.media_playlists)
+                playlist = self.master_playlist.media_playlists[i]
 
         # download and parse media playlist
         r = playlist.download()
