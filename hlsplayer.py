@@ -27,9 +27,9 @@ class Player():
             return
 
         if len(self.master_playlist.media_playlists) == 0:
-	    # in this case we looked for media playlists, but didn't find any.
-	    # maybe we're looking at a stream that only has a single bitrate
-	    # and all the fragments are in the master playlist
+            # in this case we looked for media playlists, but didn't find any.
+            # maybe we're looking at a stream that only has a single bitrate
+            # and all the fragments are in the master playlist
             playlist = hlsobject.MediaPlaylist('media',url)
         else:
             # I randomly pick a quality, unless it's specified...
