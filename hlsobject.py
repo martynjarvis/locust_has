@@ -139,7 +139,10 @@ class MediaPlaylist(HLSObject):
     def get_media_fragment(self, msq):
         idx = msq - self.first_media_sequence()
         if self.media_fragments[idx].media_sequence != msq:
-            raise MissedFragment('Fragments are not numbered sequentially')
+            raise hlserror.MissedFragment('Fragments are not numbered '
+                                          'sequentially: {0}!={1}'.format(
+                                          self.media_fragments[idx].media_sequence,
+                                          msq))
         return self.media_fragments[idx]
 
 class MediaFragment(HLSObject):
