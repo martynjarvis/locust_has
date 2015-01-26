@@ -13,7 +13,7 @@ class HLSObject(object):
         start_time = time.time()
 
         try:
-            r = requests.get(self.url)
+            r = requests.get(self.url, verify=False)
             r.raise_for_status() # requests wont raise http error for 404 otherwise
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.HTTPError,

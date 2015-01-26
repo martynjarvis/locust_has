@@ -21,9 +21,9 @@ def my_dict(a):
 def my_list(a):
     if not ',' in a:
         raise ValueError
-    a = list(my_split(a))
-    if len(a)>=1:  # TODO think about this
-        return [my_cast(x) for x in a]
+    l = list(my_split(a))
+    if len(l)>=1:  # TODO think about this
+        return [my_cast(x.strip('\'\"')) for x in l]
 
 def my_split(string,sep=','):
     start = 0
